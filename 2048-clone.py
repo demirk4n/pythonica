@@ -2,24 +2,24 @@ import pygame
 import random
 from pygame.locals import *
 
-NUM_ROWS = 4 #y
-NUM_COLS = 4 #x
+NUM_ROWS = 4  # y
+NUM_COLS = 4  # x
 
 CELL_SIZE = 60 # Cell size in pixels
 TOP_SCREEN_MARGIN = 50
 # set up the colors R G B
 
 BLACK = (0, 0, 0)
-GRAY     = (100, 100, 100)
+GRAY = (100, 100, 100)
 NAVY_BLUE = ( 60,  60, 100)
-WHITE    = (255, 255, 255)
-RED      = (255,   0,   0)
-GREEN    = (  0, 255,   0)
-BLUE     = (  0,   0, 255)
-YELLOW   = (255, 255,   0)
-ORANGE   = (255, 128,   0)
-PURPLE   = (255,   0, 255)
-CYAN     = (  0, 255, 255)
+WHITE = (255, 255, 255)
+RED = (255,   0,   0)
+GREEN = (0, 255,   0)
+BLUE = (0,   0, 255)
+YELLOW = (255, 255,   0)
+ORANGE = (255, 128,   0)
+PURPLE = (255,   0, 255)
+CYAN = (0, 255, 255)
 
 # setup directions
 LEFT = 'left'
@@ -37,6 +37,7 @@ class Board():
         self.shift_direction = None
         self.move_count = 0
         self.score = 0
+        self.game_over = False
 
     def create_board(self):
         for x in range(NUM_ROWS):
@@ -85,33 +86,42 @@ class Board():
             self.pop_random()
 
         self.move_count = 0
+        #print(self.score)
+
+        # draw score
+        score_rect = pygame.rect.Rect((0, 0), (NUM_COLS * CELL_SIZE, TOP_SCREEN_MARGIN))
+        font = pygame.font.Font('freesansbold.ttf', 30)
+        text = font.render(str(self.score), True, WHITE)
+        text_pos = text.get_rect(center=(score_rect.centerx,score_rect.centery))
+        screen.blit(text, text_pos)
+
 
     def shift_order(self):
-        order = []
-        if self.shift_direction == LEFT:
-            for y in range(NUM_ROWS):
-                for x in range(NUM_COLS):
-                    order.append((x,y))
-            return order
-            #return [(0,0),(1,0),(2,0),(3,0),(0,1),(1,1),(2,1),(3,1),(0,2),(1,2),(2,2),(3,2),(0,3),(1,3),(2,3),(3,3)]
-        if self.shift_direction == RIGHT:
-            for y in range(NUM_ROWS):
-                for x in range(NUM_COLS-1, -1 , -1):
-                    order.append((x,y))
-            return order
-            #return [(3,0),(2,0),(1,0),(0,0),(3,1),(2,1),(1,1),(0,1),(3,2),(2,2),(1,2),(0,2),(3,3),(2,3),(1,3),(0,3)]
-        if self.shift_direction == UP:
-            for x in range(NUM_COLS):
+            order = []
+            if self.shift_direction == LEFT:
                 for y in range(NUM_ROWS):
+                    for x in range(NUM_COLS):
                         order.append((x,y))
-            return order
-            #return [(0,0),(0,1),(0,2),(0,3),(1,0),(1,1),(1,2),(1,3),(2,0),(2,1),(2,2),(2,3),(3,0),(3,1),(3,2),(3,3)]
-        if self.shift_direction == DOWN:
-            for x in range(NUM_COLS):
-                for y in range(NUM_ROWS-1, -1, -1):
-                    order.append((x,y))
-            return order
-            #return [(0,3),(0,2),(0,1),(0,0),(1,3),(1,2),(1,1),(1,0),(2,3),(2,2),(2,1),(2,0),(3,3),(3,2),(3,1),(3,0)]
+                return order
+                #return [(0,0),(1,0),(2,0),(3,0),(0,1),(1,1),(2,1),(3,1),(0,2),(1,2),(2,2),(3,2),(0,3),(1,3),(2,3),(3,3)]
+            if self.shift_direction == RIGHT:
+                for y in range(NUM_ROWS):
+                    for x in range(NUM_COLS-1, -1 , -1):
+                        order.append((x,y))
+                return order
+                #return [(3,0),(2,0),(1,0),(0,0),(3,1),(2,1),(1,1),(0,1),(3,2),(2,2),(1,2),(0,2),(3,3),(2,3),(1,3),(0,3)]
+            if self.shift_direction == UP:
+                for x in range(NUM_COLS):
+                    for y in range(NUM_ROWS):
+                            order.append((x, y))
+                return order
+                #return [(0,0),(0,1),(0,2),(0,3),(1,0),(1,1),(1,2),(1,3),(2,0),(2,1),(2,2),(2,3),(3,0),(3,1),(3,2),(3,3)]
+            if self.shift_direction == DOWN:
+                for x in range(NUM_COLS):
+                    for y in range(NUM_ROWS-1, -1, -1):
+                        order.append((x,y))
+                return order
+                #return [(0,3),(0,2),(0,1),(0,0),(1,3),(1,2),(1,1),(1,0),(2,3),(2,2),(2,1),(2,0),(3,3),(3,2),(3,1),(3,0)]
 
     def shift_board(self):
         # print(self.shift_order())
@@ -149,8 +159,10 @@ class Board():
                 self.cell_action((x, y))
                 self.move_count += 1
             if target_cell.value == current_cell.value and target_cell.lock is False:
-                self.board[(x, y)] = Cell((x, y), target_cell.value + current_cell.value, screen, True)
+                new_cell_value = target_cell.value + current_cell.value
+                self.board[(x, y)] = Cell((x, y), new_cell_value, screen, True)
                 self.board[xy] = Cell(xy, 0, screen, False)
+                self.score += new_cell_value
                 self.move_count += 1
             else:
                 pass
@@ -165,7 +177,8 @@ class Cell():
         self.draw_cell(cell_loc, value)
 
     def draw_cell(self, cell_loc, value):
-        cell_colors = {2: RED, 4: GREEN, 8: BLUE, 16: YELLOW, 32: ORANGE, 64: PURPLE, 128: CYAN, 256: NAVY_BLUE}
+        cell_colors = {2: RED, 4: GREEN, 8: BLUE, 16: YELLOW, 32: ORANGE, 64: PURPLE, 128: CYAN, 256: NAVY_BLUE,
+                       512: GRAY}
         x, y = cell_loc
         (loc_x, loc_y) = x * CELL_SIZE, (y * CELL_SIZE) + TOP_SCREEN_MARGIN
         if value >= 2:
