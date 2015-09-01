@@ -1,4 +1,7 @@
-import pygame, random, time, sys
+import pygame
+import random
+import time
+import sys
 from pygame.locals import *
 
 NUM_ROWS = 4  # y
@@ -11,7 +14,7 @@ WINDOW_HEIGHT = NUM_ROWS * CELL_SIZE + TOP_SCREEN_MARGIN
 SCORE_FONT_SIZE = 30
 CELL_FONT_SIZE = 20
 
-FPS = 10  # Game FPS
+FPS = 25  # Game FPS
 CELL_MOVE_SPEED = 10  # in frames per second
 
 # set up the colors R G B
@@ -52,10 +55,14 @@ class Board(object):
                 # print(cell_loc)
                 self.board[cell_loc] = Cell(cell_loc, 0, False)
 
+    def unlock_cells(self):
+        for (x, y), cell in self.board.items():
+            cell.lock = False
+
     def pop_random(self):
         available_cell_list = []
         for (x, y), cell in self.board.items():
-            if cell.value == 0: # If value < 2 then this is an empty cell
+            if cell.value == 0:  # If value < 2 then this is an empty cell
                 available_cell_list.append((x, y))
         if len(available_cell_list) == 0:
             return False
@@ -64,13 +71,13 @@ class Board(object):
             self.board[rand_xy] = Cell(rand_xy, 2, False)
 
     def update(self, dt):
-
         if self.busy:
             self.busy = False
             self.shift_board()
         elif not self.busy and self.move_count > 0:
             self.pop_random()
             self.move_count = 0
+            self.unlock_cells()
 
         #print(self.busy)
 
@@ -84,7 +91,7 @@ class Board(object):
         if self.shift_direction == LEFT:
             for y in range(NUM_ROWS):
                 for x in range(NUM_COLS):
-                    order.append((x,y))
+                    order.append((x, y))
             #return [(0,0),(1,0),(2,0),(3,0),(0,1),(1,1),(2,1),(3,1),(0,2),(1,2),(2,2),(3,2),(0,3),(1,3),(2,3),(3,3)]
         if self.shift_direction == RIGHT:
             for y in range(NUM_ROWS):
@@ -99,7 +106,7 @@ class Board(object):
         if self.shift_direction == DOWN:
             for x in range(NUM_COLS):
                 for y in range(NUM_ROWS-1, -1, -1):
-                    order.append((x,y))
+                    order.append((x, y))
             #return [(0,3),(0,2),(0,1),(0,0),(1,3),(1,2),(1,1),(1,0),(2,3),(2,2),(2,1),(2,0),(3,3),(3,2),(3,1),(3,0)]
         return order
 
@@ -108,7 +115,6 @@ class Board(object):
 
         for (x, y) in self.shift_order():
             current_cell = self.board[(x, y)]
-            current_cell.lock = False
             next_cell = self.get_next_cell((x, y))
 
             if current_cell.value >= 2 and next_cell:  # action only on nonempty cells
@@ -117,14 +123,14 @@ class Board(object):
                     current_cell.value, current_cell.lock = 0, False
                     if self.get_next_cell(next_cell.location):
                         self.busy = True
+                    self.move_count += 1
 
                 elif next_cell.value == current_cell.value and next_cell.lock is False:
                     next_cell.value += current_cell.value
                     next_cell.lock = True
                     current_cell.value, current_cell.lock = 0, False
                     self.score += next_cell.value + current_cell.value
-
-                self.move_count += 1
+                    self.move_count += 1
 
     def get_next_cell(self, location):
 
@@ -146,7 +152,7 @@ class Board(object):
             if y == NUM_ROWS:
                 y = NUM_ROWS - 1
 
-        if (x, y) == location: # no move
+        if (x, y) == location:  # no move
             return False
         else:
             return self.board[(x, y)]
@@ -185,7 +191,7 @@ class Game(object):
     def __init__(self):
         self.board = None
         pygame.init()
-        pygame.display.set_caption("Py2048 - by ED")
+        pygame.display.set_caption("Py2048 - by Evren Demirkan")
         self.clock = pygame.time.Clock()
         self.display = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT), DOUBLEBUF)
         self.board = Board()
@@ -222,7 +228,6 @@ class Game(object):
         self.draw_score()
         #pygame.display.flip()
         pygame.display.update()
-
 
     def draw_score(self):
         score_rect = pygame.rect.Rect((0, 0), (NUM_COLS * CELL_SIZE, TOP_SCREEN_MARGIN))
