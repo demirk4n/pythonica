@@ -1,3 +1,7 @@
+#
+# 2048 Clone by Evren Demirkan
+#
+
 import pygame
 import random
 import time
